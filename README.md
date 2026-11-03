@@ -1,6 +1,6 @@
 # ROS 2 RMW for Eclipse Cyclone DDS
 
-**Easy, fast, reliable, small [Eclipse Cyclone DDS](https://github.com/eclipse-cyclonedds/cyclonedds) middleware** for ROS 2. Make your **🐢 run like a 🚀** [Eclipse Cyclone DDS has great adopters](https://iot.eclipse.org/adopters/) and contributors in the ROS community and is an [Eclipse Foundation](https://www.eclipse.org) open source project of [Eclipse IoT](https://iot.eclipse.org) and [OpenADx](https://openadx.eclipse.org) (autonomous driving).
+**Easy, fast, reliable, small [Eclipse Cyclone DDS](https://github.com/eclipse-cyclonedds/cyclonedds) Tier 1 ROS middleware** for ROS 2. Make your **🐢 run like a 🚀** [Eclipse Cyclone DDS has great adopters](https://iot.eclipse.org/adopters/) and contributors in the ROS community and is an [Eclipse Foundation](https://www.eclipse.org) open source project of [Eclipse IoT](https://iot.eclipse.org) and [OpenADx](https://openadx.eclipse.org) (autonomous driving).
 
 This package lets [*ROS 2*](https://docs.ros.org/en/rolling/) use [*Eclipse Cyclone DDS*](https://github.com/eclipse-cyclonedds/cyclonedds) as the underlying DDS implementation.
 Cyclone DDS is ready to use. It seeks to give the fastest, easiest, and most robust ROS 2 experience. Let the Cyclone blow you away!
@@ -33,6 +33,12 @@ With large samples (100s of kilobytes), excessive latency can be caused by runni
 ## Debugging
 
 So Cyclone isn't playing nice or not giving you the performance you had hoped for? That's not good... Please [file an issue against this repository](https://github.com/ros2/rmw_cyclonedds/issues/new)!
+
+### CycloneDDS Insight
+
+[CycloneDDS Insight](https://github.com/eclipse-cyclonedds/cyclonedds-insight) is a **graphical DDS inspection and debugging tool** for ROS 2 and Cyclone DDS that can be used to inspect participants, topics, publishers and subscribers, diagnose discovery issues, verify **communication architectures**, and monitor DDS traffic and communication statistics such as **received bytes**, **sent bytes** and **retransmitted bytes**.
+
+### ddsperf
 
 The `ddsperf` tool distributed with Cyclone DDS can be used to check that communication works *without* ROS. Run `ddsperf sanity` on two different machines - if the "mean" value is above `100000us`, there are likely network issues.
 
