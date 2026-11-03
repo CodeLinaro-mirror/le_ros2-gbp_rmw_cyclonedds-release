@@ -1255,8 +1255,7 @@ static bool check_create_domain(dds_domainid_t did, rmw_discovery_options_t * di
     if ((get_env_error = rcutils_get_env("CYCLONEDDS_URI", &config_from_env)) == nullptr) {
       config += std::string(config_from_env);
     } else {
-      RCUTILS_LOG_ERROR_NAMED(
-        "rmw_cyclonedds_cpp",
+      RMW_SET_ERROR_MSG_WITH_FORMAT_STRING(
         "rmw_create_node: failed to retrieve CYCLONEDDS_URI environment variable, error %s",
         get_env_error);
       gcdds().domains.erase(did);
@@ -1266,8 +1265,7 @@ static bool check_create_domain(dds_domainid_t did, rmw_discovery_options_t * di
     RCUTILS_LOG_DEBUG_NAMED("rmw_cyclonedds_cpp", "Config XML is %s", config.c_str());
 
     if ((dom.domain_handle = dds_create_domain(did, config.c_str())) < 0) {
-      RCUTILS_LOG_ERROR_NAMED(
-        "rmw_cyclonedds_cpp",
+      RMW_SET_ERROR_MSG_WITH_FORMAT_STRING(
         "rmw_create_node: failed to create domain, error %s", dds_strretcode(dom.domain_handle));
       gcdds().domains.erase(did);
       return false;
@@ -1443,8 +1441,7 @@ rmw_context_impl_s::init(rmw_init_options_t * options, size_t domain_id)
   this->ppant = dds_create_participant(this->domain_id, ppant_qos.get(), nullptr);
   if (this->ppant < 0) {
     this->clean_up();
-    RCUTILS_LOG_ERROR_NAMED(
-      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DDS participant");
+    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DDS participant");
     return RMW_RET_ERROR;
   }
   get_entity_gid(this->ppant, this->ppant_gid);
@@ -1454,38 +1451,33 @@ rmw_context_impl_s::init(rmw_init_options_t * options, size_t domain_id)
     dds_create_reader(this->ppant, DDS_BUILTIN_TOPIC_DCPSPARTICIPANT, nullptr, nullptr)) < 0)
   {
     this->clean_up();
-    RCUTILS_LOG_ERROR_NAMED(
-      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DCPSParticipant reader");
+    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DCPSParticipant reader");
     return RMW_RET_ERROR;
   }
   if ((this->rd_subscription =
     dds_create_reader(this->ppant, DDS_BUILTIN_TOPIC_DCPSSUBSCRIPTION, nullptr, nullptr)) < 0)
   {
     this->clean_up();
-    RCUTILS_LOG_ERROR_NAMED(
-      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DCPSSubscription reader");
+    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DCPSSubscription reader");
     return RMW_RET_ERROR;
   }
   if ((this->rd_publication =
     dds_create_reader(this->ppant, DDS_BUILTIN_TOPIC_DCPSPUBLICATION, nullptr, nullptr)) < 0)
   {
     this->clean_up();
-    RCUTILS_LOG_ERROR_NAMED(
-      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DCPSPublication reader");
+    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DCPSPublication reader");
     return RMW_RET_ERROR;
   }
   /* Create DDS publisher/subscriber objects that will be used for all DDS writers/readers
     to be created for RMW publishers/subscriptions. */
   if ((this->dds_pub = dds_create_publisher(this->ppant, nullptr, nullptr)) < 0) {
     this->clean_up();
-    RCUTILS_LOG_ERROR_NAMED(
-      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DDS publisher");
+    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DDS publisher");
     return RMW_RET_ERROR;
   }
   if ((this->dds_sub = dds_create_subscriber(this->ppant, nullptr, nullptr)) < 0) {
     this->clean_up();
-    RCUTILS_LOG_ERROR_NAMED(
-      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DDS subscriber");
+    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DDS subscriber");
     return RMW_RET_ERROR;
   }
 
@@ -2508,12 +2500,15 @@ static CddsPublisher * create_cdds_publisher(
   RET_NULL_X(qos_policies, return nullptr);
   const rosidl_message_type_support_t * type_support = get_typesupport(type_supports);
   RET_NULL_X(type_support, return nullptr);
+  const std::string type_name = get_message_type_name(type_support);
+  if (type_name.empty()) {
+    return nullptr;
+  }
   CddsPublisher * pub = new CddsPublisher();
   dds_entity_t topic;
   dds_qos_t * qos;
 
   std::string fqtopic_name = make_fqtopic(ROS_TOPIC_PREFIX, topic_name, "", qos_policies);
-  const std::string type_name = get_message_type_name(type_support);
   auto message_type_support = rmw_cyclonedds_cpp::make_message_value_type(type_supports);
   const bool is_self_contained = message_type_support->is_self_contained();
   const size_t sample_size = message_type_support->sizeof_type();
@@ -2787,12 +2782,12 @@ extern "C" rmw_ret_t rmw_publisher_count_matched_subscriptions(
   RMW_CHECK_ARGUMENT_FOR_NULL(subscription_count, RMW_RET_INVALID_ARGUMENT);
 
   auto pub = static_cast<CddsPublisher *>(publisher->data);
-  dds_publication_matched_status_t status;
-  if (dds_get_publication_matched_status(pub->enth, &status) < 0) {
+  const dds_return_t count = dds_get_matched_subscriptions(pub->enth, nullptr, 0);
+  if (count < 0) {
     return RMW_RET_ERROR;
   }
 
-  *subscription_count = status.current_count;
+  *subscription_count = static_cast<size_t>(count);
   return RMW_RET_OK;
 }
 
@@ -3007,12 +3002,15 @@ static CddsSubscription * create_cdds_subscription(
   RET_NULL_X(qos_policies, return nullptr);
   const rosidl_message_type_support_t * type_support = get_typesupport(type_supports);
   RET_NULL_X(type_support, return nullptr);
+  const std::string type_name = get_message_type_name(type_support);
+  if (type_name.empty()) {
+    return nullptr;
+  }
   CddsSubscription * sub = new CddsSubscription();
   dds_entity_t topic;
   dds_qos_t * qos;
 
   std::string fqtopic_name = make_fqtopic(ROS_TOPIC_PREFIX, topic_name, "", qos_policies);
-  const std::string type_name = get_message_type_name(type_support);
   auto message_type_support = rmw_cyclonedds_cpp::make_message_value_type(type_supports);
   bool is_self_contained = message_type_support->is_self_contained();
 
@@ -3237,12 +3235,12 @@ extern "C" rmw_ret_t rmw_subscription_count_matched_publishers(
   RMW_CHECK_ARGUMENT_FOR_NULL(publisher_count, RMW_RET_INVALID_ARGUMENT);
 
   auto sub = static_cast<CddsSubscription *>(subscription->data);
-  dds_subscription_matched_status_t status;
-  if (dds_get_subscription_matched_status(sub->enth, &status) < 0) {
+  const dds_return_t count = dds_get_matched_publications(sub->enth, nullptr, 0);
+  if (count < 0) {
     return RMW_RET_ERROR;
   }
 
-  *publisher_count = status.current_count;
+  *publisher_count = static_cast<size_t>(count);
   return RMW_RET_OK;
 }
 
@@ -4421,10 +4419,17 @@ static void waitset_detach(CddsWaitset * ws)
   for (auto && x : ws->cls) {
     dds_waitset_detach(ws->waitseth, x->client.sub->rdcondh);
   }
+  std::unordered_set<dds_entity_t> event_entities;
+  for (auto && x : ws->evs) {
+    if (event_entities.insert(x.enth).second) {
+      dds_waitset_detach(ws->waitseth, x.enth);
+    }
+  }
   ws->subs.resize(0);
   ws->gcs.resize(0);
   ws->srvs.resize(0);
   ws->cls.resize(0);
+  ws->evs.resize(0);
   ws->nelems = 0;
 }
 
@@ -5139,7 +5144,13 @@ static rmw_ret_t rmw_init_cs(
   const rosidl_service_type_support_t * type_support = get_service_typesupport(type_supports);
   RET_NULL(type_support);
   const std::string request_type_name = get_request_type_name(type_support);
+  if (request_type_name.empty()) {
+    return RMW_RET_ERROR;
+  }
   const std::string response_type_name = get_response_type_name(type_support);
+  if (response_type_name.empty()) {
+    return RMW_RET_ERROR;
+  }
 
   auto pub = std::make_unique<CddsPublisher>();
   auto sub = std::make_unique<CddsSubscription>();
