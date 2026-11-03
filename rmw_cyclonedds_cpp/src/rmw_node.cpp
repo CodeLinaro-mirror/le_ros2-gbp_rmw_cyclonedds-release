@@ -14,9 +14,6 @@
 
 #include <cassert>
 #include <cstring>
-#ifdef __linux__
-#include <fstream>
-#endif
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>
@@ -570,12 +567,7 @@ extern "C" rmw_ret_t rmw_subscription_set_on_new_message_callback(
       return RMW_RET_ERROR;
     }
 
-    // For KEEP_ALL history, depth is reported as 0 (since CycloneDDS internally
-    // uses -1 for unlimited depth, which gets mapped to 0 in dds_qos_to_rmw_qos).
-    // In that case, pass through the full unread_count instead of clipping to 0.
-    size_t events = (sub_qos.depth > 0) ?
-      std::min(data->unread_count, sub_qos.depth) :
-      data->unread_count;
+    size_t events = std::min(data->unread_count, sub_qos.depth);
 
     callback(user_data, events);
     data->unread_count = 0;
@@ -1255,7 +1247,8 @@ static bool check_create_domain(dds_domainid_t did, rmw_discovery_options_t * di
     if ((get_env_error = rcutils_get_env("CYCLONEDDS_URI", &config_from_env)) == nullptr) {
       config += std::string(config_from_env);
     } else {
-      RMW_SET_ERROR_MSG_WITH_FORMAT_STRING(
+      RCUTILS_LOG_ERROR_NAMED(
+        "rmw_cyclonedds_cpp",
         "rmw_create_node: failed to retrieve CYCLONEDDS_URI environment variable, error %s",
         get_env_error);
       gcdds().domains.erase(did);
@@ -1265,7 +1258,8 @@ static bool check_create_domain(dds_domainid_t did, rmw_discovery_options_t * di
     RCUTILS_LOG_DEBUG_NAMED("rmw_cyclonedds_cpp", "Config XML is %s", config.c_str());
 
     if ((dom.domain_handle = dds_create_domain(did, config.c_str())) < 0) {
-      RMW_SET_ERROR_MSG_WITH_FORMAT_STRING(
+      RCUTILS_LOG_ERROR_NAMED(
+        "rmw_cyclonedds_cpp",
         "rmw_create_node: failed to create domain, error %s", dds_strretcode(dom.domain_handle));
       gcdds().domains.erase(did);
       return false;
@@ -1387,28 +1381,6 @@ rmw_context_impl_s::init(rmw_init_options_t * options, size_t domain_id)
     return RMW_RET_OK;
   }
 
-#ifdef __linux__
-  {
-    // rmem_max is a system-wide setting, so warn only once per process
-    static std::once_flag rmem_max_warn_once;
-    std::call_once(
-      rmem_max_warn_once, []() {
-        std::ifstream rmem_max_file("/proc/sys/net/core/rmem_max");
-        if (rmem_max_file.is_open()) {
-          size_t rmem_max = 0;
-          rmem_max_file >> rmem_max;
-          if (rmem_max < 8388608) {
-            RCUTILS_LOG_WARN_NAMED(
-              "rmw_cyclonedds_cpp",
-              "system rmem_max (%zu) is lower than the recommended minimum of 8388608. "
-              "Increase it: sudo sysctl -w net.core.rmem_max=8388608",
-              rmem_max);
-          }
-        }
-      });
-  }
-#endif
-
   /* Take domains_lock and hold it until after the participant creation succeeded or
     failed: otherwise there is a race with rmw_destroy_node deleting the last participant
     and tearing down the domain for versions of Cyclone that implement the original
@@ -1441,7 +1413,8 @@ rmw_context_impl_s::init(rmw_init_options_t * options, size_t domain_id)
   this->ppant = dds_create_participant(this->domain_id, ppant_qos.get(), nullptr);
   if (this->ppant < 0) {
     this->clean_up();
-    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DDS participant");
+    RCUTILS_LOG_ERROR_NAMED(
+      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DDS participant");
     return RMW_RET_ERROR;
   }
   get_entity_gid(this->ppant, this->ppant_gid);
@@ -1451,33 +1424,38 @@ rmw_context_impl_s::init(rmw_init_options_t * options, size_t domain_id)
     dds_create_reader(this->ppant, DDS_BUILTIN_TOPIC_DCPSPARTICIPANT, nullptr, nullptr)) < 0)
   {
     this->clean_up();
-    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DCPSParticipant reader");
+    RCUTILS_LOG_ERROR_NAMED(
+      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DCPSParticipant reader");
     return RMW_RET_ERROR;
   }
   if ((this->rd_subscription =
     dds_create_reader(this->ppant, DDS_BUILTIN_TOPIC_DCPSSUBSCRIPTION, nullptr, nullptr)) < 0)
   {
     this->clean_up();
-    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DCPSSubscription reader");
+    RCUTILS_LOG_ERROR_NAMED(
+      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DCPSSubscription reader");
     return RMW_RET_ERROR;
   }
   if ((this->rd_publication =
     dds_create_reader(this->ppant, DDS_BUILTIN_TOPIC_DCPSPUBLICATION, nullptr, nullptr)) < 0)
   {
     this->clean_up();
-    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DCPSPublication reader");
+    RCUTILS_LOG_ERROR_NAMED(
+      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DCPSPublication reader");
     return RMW_RET_ERROR;
   }
   /* Create DDS publisher/subscriber objects that will be used for all DDS writers/readers
     to be created for RMW publishers/subscriptions. */
   if ((this->dds_pub = dds_create_publisher(this->ppant, nullptr, nullptr)) < 0) {
     this->clean_up();
-    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DDS publisher");
+    RCUTILS_LOG_ERROR_NAMED(
+      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DDS publisher");
     return RMW_RET_ERROR;
   }
   if ((this->dds_sub = dds_create_subscriber(this->ppant, nullptr, nullptr)) < 0) {
     this->clean_up();
-    RMW_SET_ERROR_MSG("rmw_create_node: failed to create DDS subscriber");
+    RCUTILS_LOG_ERROR_NAMED(
+      "rmw_cyclonedds_cpp", "rmw_create_node: failed to create DDS subscriber");
     return RMW_RET_ERROR;
   }
 
@@ -2500,15 +2478,12 @@ static CddsPublisher * create_cdds_publisher(
   RET_NULL_X(qos_policies, return nullptr);
   const rosidl_message_type_support_t * type_support = get_typesupport(type_supports);
   RET_NULL_X(type_support, return nullptr);
-  const std::string type_name = get_message_type_name(type_support);
-  if (type_name.empty()) {
-    return nullptr;
-  }
   CddsPublisher * pub = new CddsPublisher();
   dds_entity_t topic;
   dds_qos_t * qos;
 
   std::string fqtopic_name = make_fqtopic(ROS_TOPIC_PREFIX, topic_name, "", qos_policies);
+  const std::string type_name = get_message_type_name(type_support);
   auto message_type_support = rmw_cyclonedds_cpp::make_message_value_type(type_supports);
   const bool is_self_contained = message_type_support->is_self_contained();
   const size_t sample_size = message_type_support->sizeof_type();
@@ -3002,15 +2977,12 @@ static CddsSubscription * create_cdds_subscription(
   RET_NULL_X(qos_policies, return nullptr);
   const rosidl_message_type_support_t * type_support = get_typesupport(type_supports);
   RET_NULL_X(type_support, return nullptr);
-  const std::string type_name = get_message_type_name(type_support);
-  if (type_name.empty()) {
-    return nullptr;
-  }
   CddsSubscription * sub = new CddsSubscription();
   dds_entity_t topic;
   dds_qos_t * qos;
 
   std::string fqtopic_name = make_fqtopic(ROS_TOPIC_PREFIX, topic_name, "", qos_policies);
+  const std::string type_name = get_message_type_name(type_support);
   auto message_type_support = rmw_cyclonedds_cpp::make_message_value_type(type_supports);
   bool is_self_contained = message_type_support->is_self_contained();
 
@@ -4419,17 +4391,10 @@ static void waitset_detach(CddsWaitset * ws)
   for (auto && x : ws->cls) {
     dds_waitset_detach(ws->waitseth, x->client.sub->rdcondh);
   }
-  std::unordered_set<dds_entity_t> event_entities;
-  for (auto && x : ws->evs) {
-    if (event_entities.insert(x.enth).second) {
-      dds_waitset_detach(ws->waitseth, x.enth);
-    }
-  }
   ws->subs.resize(0);
   ws->gcs.resize(0);
   ws->srvs.resize(0);
   ws->cls.resize(0);
-  ws->evs.resize(0);
   ws->nelems = 0;
 }
 
@@ -5144,13 +5109,7 @@ static rmw_ret_t rmw_init_cs(
   const rosidl_service_type_support_t * type_support = get_service_typesupport(type_supports);
   RET_NULL(type_support);
   const std::string request_type_name = get_request_type_name(type_support);
-  if (request_type_name.empty()) {
-    return RMW_RET_ERROR;
-  }
   const std::string response_type_name = get_response_type_name(type_support);
-  if (response_type_name.empty()) {
-    return RMW_RET_ERROR;
-  }
 
   auto pub = std::make_unique<CddsPublisher>();
   auto sub = std::make_unique<CddsSubscription>();

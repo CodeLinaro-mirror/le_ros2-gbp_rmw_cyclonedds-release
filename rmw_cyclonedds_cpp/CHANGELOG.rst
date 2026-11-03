@@ -2,27 +2,16 @@
 Changelog for package rmw_cyclonedds_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-4.2.2 (2026-11-03)
+4.1.6 (2026-11-03)
 ------------------
-* Set rmw error message on node/domain creation failures (`#624 <https://github.com/ros2/rmw_cyclonedds/issues/624>`_)
-* Detach event entities when the waitset is rebuilt (`#621 <https://github.com/ros2/rmw_cyclonedds/issues/621>`_)
-* Return an empty string instead of nullptr for unknown typesupports (`#615 <https://github.com/ros2/rmw_cyclonedds/issues/615>`_)
-* Avoid consuming matched events in count queries (`#607 <https://github.com/ros2/rmw_cyclonedds/issues/607>`_)
-* Use the SPDX identifier Apache-2.0 in package.xml license tags (`#608 <https://github.com/ros2/rmw_cyclonedds/issues/608>`_)
-* Contributors: Maurice Alexander Purnawan, Michael Carroll
+* Avoid consuming matched events in count queries (`#607 <https://github.com/ros2/rmw_cyclonedds/issues/607>`_) (`#611 <https://github.com/ros2/rmw_cyclonedds/issues/611>`_)
+* Contributors: mergify[bot]
 
-4.2.1 (2026-08-21)
+4.1.5 (2026-08-21)
 ------------------
-* print rmem warning per-process, and adjust the output filter. (`#602 <https://github.com/ros2/rmw_cyclonedds/issues/602>`_)
-* Warn when system net.core.rmem_max is too low for CycloneDDS (`#590 <https://github.com/ros2/rmw_cyclonedds/issues/590>`_)
-* Fix subscription graph cleanup on destruction (`#594 <https://github.com/ros2/rmw_cyclonedds/issues/594>`_)
-* Downgrade 'Failed to parse type hash' log from WARN to DEBUG (`#591 <https://github.com/ros2/rmw_cyclonedds/issues/591>`_)
-* use C++ 20 in default. (`#588 <https://github.com/ros2/rmw_cyclonedds/issues/588>`_)
-* Fix KEEP_ALL history handling in subscription callback (`#584 <https://github.com/ros2/rmw_cyclonedds/issues/584>`_)
-* Contributors: FAN YUCHEN, Tomoya Fujita, Tony Najjar, Yuchen Fan, ganla
-
-4.2.0 (2026-05-06)
-------------------
+* Fix subscription graph cleanup on destruction (`#594 <https://github.com/ros2/rmw_cyclonedds/issues/594>`_) (`#598 <https://github.com/ros2/rmw_cyclonedds/issues/598>`_)
+* Downgrade 'Failed to parse type hash' log from WARN to DEBUG (`#591 <https://github.com/ros2/rmw_cyclonedds/issues/591>`_) (`#595 <https://github.com/ros2/rmw_cyclonedds/issues/595>`_)
+* Contributors: mergify[bot]
 
 4.1.4 (2026-04-14)
 ------------------
