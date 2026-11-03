@@ -2735,12 +2735,12 @@ extern "C" rmw_ret_t rmw_publisher_count_matched_subscriptions(
   RMW_CHECK_ARGUMENT_FOR_NULL(subscription_count, RMW_RET_INVALID_ARGUMENT);
 
   auto pub = static_cast<CddsPublisher *>(publisher->data);
-  dds_publication_matched_status_t status;
-  if (dds_get_publication_matched_status(pub->enth, &status) < 0) {
+  const dds_return_t count = dds_get_matched_subscriptions(pub->enth, nullptr, 0);
+  if (count < 0) {
     return RMW_RET_ERROR;
   }
 
-  *subscription_count = status.current_count;
+  *subscription_count = static_cast<size_t>(count);
   return RMW_RET_OK;
 }
 
@@ -3191,12 +3191,12 @@ extern "C" rmw_ret_t rmw_subscription_count_matched_publishers(
   RMW_CHECK_ARGUMENT_FOR_NULL(publisher_count, RMW_RET_INVALID_ARGUMENT);
 
   auto sub = static_cast<CddsSubscription *>(subscription->data);
-  dds_subscription_matched_status_t status;
-  if (dds_get_subscription_matched_status(sub->enth, &status) < 0) {
+  const dds_return_t count = dds_get_matched_publications(sub->enth, nullptr, 0);
+  if (count < 0) {
     return RMW_RET_ERROR;
   }
 
-  *publisher_count = status.current_count;
+  *publisher_count = static_cast<size_t>(count);
   return RMW_RET_OK;
 }
 
@@ -3280,7 +3280,7 @@ extern "C" rmw_ret_t rmw_destroy_subscription(rmw_node_t * node, rmw_subscriptio
   rmw_error_string_t error_string;
   auto common = &node->context->impl->common;
   const auto cddssub = static_cast<const CddsSubscription *>(subscription->data);
-  ret = common->remove_publisher_graph(
+  ret = common->remove_subscriber_graph(
     cddssub->gid,
     node->name, node->namespace_);
   if (RMW_RET_OK != ret) {
@@ -4304,10 +4304,17 @@ static void waitset_detach(CddsWaitset * ws)
   for (auto && x : ws->cls) {
     dds_waitset_detach(ws->waitseth, x->client.sub->rdcondh);
   }
+  std::unordered_set<dds_entity_t> event_entities;
+  for (auto && x : ws->evs) {
+    if (event_entities.insert(x.enth).second) {
+      dds_waitset_detach(ws->waitseth, x.enth);
+    }
+  }
   ws->subs.resize(0);
   ws->gcs.resize(0);
   ws->srvs.resize(0);
   ws->cls.resize(0);
+  ws->evs.resize(0);
   ws->nelems = 0;
 }
 
