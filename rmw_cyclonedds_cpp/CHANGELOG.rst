@@ -2,48 +2,18 @@
 Changelog for package rmw_cyclonedds_cpp
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-4.1.6 (2026-11-03)
+4.0.4 (2026-11-03)
 ------------------
-* Avoid consuming matched events in count queries (`#607 <https://github.com/ros2/rmw_cyclonedds/issues/607>`_) (`#611 <https://github.com/ros2/rmw_cyclonedds/issues/611>`_)
+* Detach event entities when the waitset is rebuilt (`#621 <https://github.com/ros2/rmw_cyclonedds/issues/621>`_) (`#631 <https://github.com/ros2/rmw_cyclonedds/issues/631>`_)
+* Fix subscription graph cleanup on destruction (`#594 <https://github.com/ros2/rmw_cyclonedds/issues/594>`_) (`#616 <https://github.com/ros2/rmw_cyclonedds/issues/616>`_)
+* Avoid consuming matched events in count queries (`#607 <https://github.com/ros2/rmw_cyclonedds/issues/607>`_) (`#612 <https://github.com/ros2/rmw_cyclonedds/issues/612>`_)
 * Contributors: mergify[bot]
 
-4.1.5 (2026-08-21)
+4.0.3 (2026-08-21)
 ------------------
-* Fix subscription graph cleanup on destruction (`#594 <https://github.com/ros2/rmw_cyclonedds/issues/594>`_) (`#598 <https://github.com/ros2/rmw_cyclonedds/issues/598>`_)
-* Downgrade 'Failed to parse type hash' log from WARN to DEBUG (`#591 <https://github.com/ros2/rmw_cyclonedds/issues/591>`_) (`#595 <https://github.com/ros2/rmw_cyclonedds/issues/595>`_)
+* Downgrade 'Failed to parse type hash' log from WARN to DEBUG (`#591 <https://github.com/ros2/rmw_cyclonedds/issues/591>`_) (`#596 <https://github.com/ros2/rmw_cyclonedds/issues/596>`_)
+* improve MessageTypeSupport performance. (`#562 <https://github.com/ros2/rmw_cyclonedds/issues/562>`_) (`#569 <https://github.com/ros2/rmw_cyclonedds/issues/569>`_)
 * Contributors: mergify[bot]
-
-4.1.4 (2026-04-14)
-------------------
-
-* Silence unused variable warning in Release builds (`#580 <https://github.com/ros2/rmw_cyclonedds/issues/580>`_)
-* Add key support and update Cyclone DDS compatibility (`#575 <https://github.com/ros2/rmw_cyclonedds/issues/575>`_)
-* Explicitly disable content filtering support (`#574 <https://github.com/ros2/rmw_cyclonedds/issues/574>`_)
-* Add tracepoint to ``rmw_take_loan_int`` (`#566 <https://github.com/ros2/rmw_cyclonedds/issues/566>`_)
-* Fix warnings about ``may be used uninitialized`` (`#573 <https://github.com/ros2/rmw_cyclonedds/issues/573>`_)
-* Improve MessageTypeSupport performance (`#562 <https://github.com/ros2/rmw_cyclonedds/issues/562>`_)
-* Improve serialization performance by optimizing ``dynamic_cast`` usage and replacing virtual functions with templates (`#553 <https://github.com/ros2/rmw_cyclonedds/issues/553>`_)
-* Remove defaults to trigger proper warnings (`#549 <https://github.com/ros2/rmw_cyclonedds/issues/549>`_)
-
-* Contributors: Brandon Simoncic, Janosch Machowinski, Oren Bell PhD, Shane Loretz, Tomoya Fujita, eboasson
-
-4.1.3 (2025-11-18)
-------------------
-* add : get clients, servers info (`#499 <https://github.com/ros2/rmw_cyclonedds/issues/499>`_)
-* Contributors: Minju, Lee
-
-4.1.2 (2025-10-20)
-------------------
-* Do not include rosidl_typesupport\_{c,cpp} in rmw impl typesupport list (`#544 <https://github.com/ros2/rmw_cyclonedds/issues/544>`_)
-* Contributors: Christophe Bedard
-
-4.1.1 (2025-07-01)
-------------------
-* Update CMake requirement (`#539 <https://github.com/ros2/rmw_cyclonedds/issues/539>`_)
-* Contributors: mosfet80
-
-4.1.0 (2025-04-25)
-------------------
 
 4.0.2 (2025-04-18)
 ------------------
